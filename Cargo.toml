@@ -1,0 +1,22 @@
+[package]
+name = "cryptotests"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+serde = "1.0.78"
+bytes= "1.3.0"
+byte-strings="0.1.3"
+evm = { version = "0.35.0", default-features = false }
+rlp = { version = "0.5", default-features = false }
+primitive-types = { version = "0.11.1", default-features = false, features = ["rlp"] }
+tezos_encoding = { git = "https://github.com/emturner/tezedge.git", branch = "master" }
+tezos_encoding_derive = { git = "https://github.com/emturner/tezedge.git", branch = "master" }
+crypto = { git = "https://github.com/emturner/tezedge.git", branch = "master", default-features = false, features = ["no_sodium"] }
+libsecp256k1 = { version = "0.7", default-features = false, features = ["static-context", "hmac"] }
+nom = "6.1"
+keccak="0.1.2"
+sha3 = { version = "0.10", default-features = false }
