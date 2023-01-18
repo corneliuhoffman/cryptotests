@@ -1,6 +1,4 @@
-use libsecp256k1::curve::Scalar;
 // use byte_strings::{as_bytes, concat_bytes};
-// use bytes::Bytes;
 // use crypto::{self};
 use libsecp256k1::{recover, sign, verify, Message, PublicKey, SecretKey, Signature};
 use primitive_types::*;
@@ -30,35 +28,53 @@ pub fn message(e: EthereumTransactionCommon) -> Message {
     let mes = Message::parse(tt.as_fixed_bytes());
     mes
 }
-fn signature(e: EthereumTransactionCommon) -> Signature {
-    let mut r = Scalar::default();
-    print!("{:?}\n", e.s);
-    let r1: H256 = (basic::H256::into(e.r));
-    let r2: [u8; 32] = r1.into();
-    r.set_b32(&r2);
-    let mut s = Scalar::default();
-    let s1: H256 = (basic::H256::into(e.s));
-    let s2: [u8; 32] = s1.into();
-    s.set_b32(&s2);
-    Signature { r, s }
+
+fn string_to_sk_and_address(s: String) -> (SecretKey, H160) {
+    let data: [u8; 32] = hex::decode(s).unwrap().try_into().unwrap();
+    let sk = SecretKey::parse(&data).unwrap();
+    let pk = PublicKey::from_secret_key(&sk);
+    let serialised = &pk.serialize()[1..];
+    let kec = Keccak256::digest(serialised);
+    (sk, H160::from_slice(&kec.as_slice()[12..]))
 }
+
+#[test]
+fn test_sign_to_add() {
+    let test_list = vec![
+        (
+            "4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
+            "90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+        ),
+        (
+            "DC38EE117CAE37750EB1ECC5CFD3DE8E85963B481B93E732C5D0CB66EE6B0C9D",
+            "c5ed5d9b9c957be2baa01c16310aa4d1f8bc8e6f",
+        ),
+        (
+            "80b28170e7c2cb2145c052d622ced9de477abcb287e0d23f07263cc30a260534",
+            "D0a2dBb5e6F757fd2066a7664f413CAAC504BC95",
+        ),
+    ];
+    test_list.iter().fold((), |_, (s, ea)| {
+        let (_, a) = string_to_sk_and_address(s.to_string());
+        let ea = H160::from_slice(&hex::decode(ea).unwrap());
+        assert_eq!(a, ea);
+    })
+}
+
 #[test]
 fn testsign() {
-    let sk = SecretKey::parse(&[10; 32]).unwrap();
+    let (sk, _address) = string_to_sk_and_address(
+        "4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d".to_string(),
+    );
     let pk = PublicKey::from_secret_key(&sk);
     let signed = sign_message(sk, 10, 3, 1000, 10000, [23; 20], 3);
     let mes = message(signed);
     let (s, ri) = sign(&mes, &sk);
     let v = verify(&mes, &s, &pk);
     let pk1 = recover(&mes, &s, &ri).unwrap();
-    print!("{:?}\n", s);
-    print!("{:?}\n", signature(signed));
-
     assert!(v);
     assert!(pk == pk1)
 }
-
-fn address(e: EthereumTransactionCommon) {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, HasEncoding, NomReader, BinWriter)]
 pub struct EthereumTransactionCommon {
